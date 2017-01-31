@@ -16,12 +16,15 @@
 
 package org.jetbrains.kotlin.js.translate.reference
 
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.js.backend.ast.*
+import org.jetbrains.kotlin.js.backend.ast.JsArrayLiteral
+import org.jetbrains.kotlin.js.backend.ast.JsBlock
+import org.jetbrains.kotlin.js.backend.ast.JsExpression
+import org.jetbrains.kotlin.js.backend.ast.JsLiteral
 import org.jetbrains.kotlin.js.backend.ast.metadata.SideEffectKind
 import org.jetbrains.kotlin.js.backend.ast.metadata.sideEffects
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TemporaryConstVariable
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
@@ -123,7 +126,7 @@ class CallArgumentTranslator private constructor(
             assert(argsBeforeVararg != null) { "argsBeforeVararg should not be null" }
             assert(concatArguments != null) { "concatArguments should not be null" }
 
-            concatArguments!!.addAll(result)
+            concatArguments!!.add(JsArrayLiteral(result))
 
             if (!argsBeforeVararg!!.isEmpty()) {
                 concatArguments.add(0, JsArrayLiteral(argsBeforeVararg).apply { sideEffects = SideEffectKind.DEPENDS_ON_STATE })
@@ -255,7 +258,7 @@ class CallArgumentTranslator private constructor(
                 listOf(concatExpression)
             }
             else {
-                listOf(JsAstUtils.invokeMethod(list[0], "slice"))
+                listOf(JsAstUtils.invokeMethod(Namer.kotlinObject(), "copyTypedArray", list[0]))
             }
         }
 
@@ -263,7 +266,8 @@ class CallArgumentTranslator private constructor(
             assert(concatArguments.isNotEmpty()) { "concatArguments.size should not be 0" }
 
             if (concatArguments.size > 1) {
-                return JsInvocation(JsNameRef("concat", concatArguments[0]), concatArguments.subList(1, concatArguments.size))
+                return JsAstUtils.invokeMethod(Namer.kotlinObject(), "concatTypedArray", concatArguments[0],
+                                               JsArrayLiteral(concatArguments.subList(1, concatArguments.size)))
 
             }
             else {
@@ -286,12 +290,9 @@ class CallArgumentTranslator private constructor(
                 if (valueArgument.getSpreadElement() != null) {
                     if (lastArrayContent.size > 0) {
                         concatArguments.add(JsArrayLiteral(lastArrayContent).apply { sideEffects = SideEffectKind.DEPENDS_ON_STATE })
-                        concatArguments.add(expressionArgument)
                         lastArrayContent = mutableListOf<JsExpression>()
                     }
-                    else {
-                        concatArguments.add(expressionArgument)
-                    }
+                    concatArguments.add(expressionArgument)
                 }
                 else {
                     lastArrayContent.add(expressionArgument)
