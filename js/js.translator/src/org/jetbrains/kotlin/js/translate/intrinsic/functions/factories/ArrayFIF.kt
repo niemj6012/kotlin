@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.js.patterns.NamePredicate
 import org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern
 import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
+import org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.BuiltInPropertyIntrinsic
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsicWithReceiverComputed
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils
 import org.jetbrains.kotlin.name.Name
@@ -35,20 +36,21 @@ import org.jetbrains.kotlin.name.Name
 object ArrayFIF : CompositeFIF() {
     @JvmField
     val GET_INTRINSIC = intrinsify { receiver, arguments, _ ->
-        assert(receiver != null)
         assert(arguments.size == 1) { "Array get expression must have one argument." }
         val (indexExpression) = arguments
-        JsArrayAccess(receiver, indexExpression)
+        JsArrayAccess(receiver!!, indexExpression)
     }
 
     @JvmField
     val SET_INTRINSIC = intrinsify { receiver, arguments, _ ->
-        assert(receiver != null)
         assert(arguments.size == 2) { "Array set expression must have two arguments." }
         val (indexExpression, value) = arguments
-        val arrayAccess = JsArrayAccess(receiver, indexExpression)
+        val arrayAccess = JsArrayAccess(receiver!!, indexExpression)
         JsAstUtils.assignment(arrayAccess, value)
     }
+
+    @JvmField
+    val LENGTH_PROPERTY_INTRINSIC = BuiltInPropertyIntrinsic("length")
 
     init {
         val arrayTypeNames = mutableListOf(KotlinBuiltIns.FQ_NAMES.array.shortName())
@@ -58,7 +60,7 @@ object ArrayFIF : CompositeFIF() {
 
         add(pattern(arrays, "get"), GET_INTRINSIC)
         add(pattern(arrays, "set"), SET_INTRINSIC)
-        add(pattern(arrays, "<get-size>"), CompositeFIF.LENGTH_PROPERTY_INTRINSIC)
+        add(pattern(arrays, "<get-size>"), LENGTH_PROPERTY_INTRINSIC)
         add(pattern(arrays, "iterator"), KotlinFunctionIntrinsic("arrayIterator"))
 
         add(BOOLEAN.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsLiteral.FALSE))
