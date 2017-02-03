@@ -62,12 +62,12 @@ object ArrayFIF : CompositeFIF() {
 
         add(BOOLEAN.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsLiteral.FALSE))
         add(CHAR.arrayPattern(), KotlinFunctionIntrinsic("newCharArray"))
-        add(BYTE.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
-        add(SHORT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
-        add(INT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
-        add(FLOAT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
+        add(BYTE.arrayPattern(), typedArrayIntrinsic("Int8"))
+        add(SHORT.arrayPattern(), typedArrayIntrinsic("Int16"))
+        add(INT.arrayPattern(), typedArrayIntrinsic("Int32"))
+        add(FLOAT.arrayPattern(), typedArrayIntrinsic("Float32"))
         add(LONG.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNameRef(Namer.LONG_ZERO, Namer.kotlinLong())))
-        add(DOUBLE.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
+        add(DOUBLE.arrayPattern(), typedArrayIntrinsic("Float64"))
 
         add(pattern(arrays, "<init>(Int,Function1)"), KotlinFunctionIntrinsic("newArrayF"))
 
@@ -82,6 +82,10 @@ object ArrayFIF : CompositeFIF() {
     private fun PrimitiveType.arrayPattern() = pattern(NamePredicate(arrayTypeName), "<init>(Int)")
 
     private fun Name.toArrayOf() = Name.identifier(decapitalize(this.asString() + "Of"))
+
+    private fun typedArrayIntrinsic(typeName: String) = intrinsify { _, arguments, _ ->
+        JsNew(JsNameRef(typeName + "Array"), arguments)
+    }
 
     private fun intrinsify(f: (receiver: JsExpression?, arguments: List<JsExpression>, context: TranslationContext) -> JsExpression)
         = object : FunctionIntrinsicWithReceiverComputed() {
