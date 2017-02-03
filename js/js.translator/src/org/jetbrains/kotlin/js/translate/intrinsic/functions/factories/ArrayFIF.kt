@@ -20,10 +20,7 @@ import com.intellij.openapi.util.text.StringUtil.decapitalize
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.PrimitiveType
 import org.jetbrains.kotlin.builtins.PrimitiveType.*
-import org.jetbrains.kotlin.js.backend.ast.JsArrayAccess
-import org.jetbrains.kotlin.js.backend.ast.JsExpression
-import org.jetbrains.kotlin.js.backend.ast.JsLiteral
-import org.jetbrains.kotlin.js.backend.ast.JsNameRef
+import org.jetbrains.kotlin.js.backend.ast.*
 import org.jetbrains.kotlin.js.patterns.NamePredicate
 import org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern
 import org.jetbrains.kotlin.js.translate.context.Namer
@@ -65,8 +62,12 @@ object ArrayFIF : CompositeFIF() {
 
         add(BOOLEAN.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsLiteral.FALSE))
         add(CHAR.arrayPattern(), KotlinFunctionIntrinsic("newCharArray"))
-        add(BYTE.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNameRef(Namer.LONG_ZERO, Namer.kotlinLong())))
+        add(BYTE.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
+        add(SHORT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
+        add(INT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
+        add(FLOAT.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
         add(LONG.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNameRef(Namer.LONG_ZERO, Namer.kotlinLong())))
+        add(DOUBLE.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNumberLiteral.ZERO))
 
         add(pattern(arrays, "<init>(Int,Function1)"), KotlinFunctionIntrinsic("newArrayF"))
 
