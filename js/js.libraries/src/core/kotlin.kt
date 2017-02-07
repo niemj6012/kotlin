@@ -72,10 +72,11 @@ internal fun <T> arrayOfNulls(reference: Array<out T>, size: Int): Array<T> {
 }
 
 internal fun arrayCopy(source: dynamic, dest: dynamic, defaultValue: Any?): dynamic {
-    var len: Int = Math.min(source.length as Int, dest.length as Int)
+    val srcLen: Int = source.length
+    val dstLen: Int = dest.length
     var index: Int = 0
-    while (index < len) dest[index] = source[index++]
-    while (index < dest.length) dest[index++] = defaultValue
+    while (index < srcLen && index < dstLen) dest[index] = source[index++]
+    while (index < dstLen) dest[index++] = defaultValue
     return dest
 }
 
