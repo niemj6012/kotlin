@@ -39,13 +39,25 @@ fun <T> arrayWithFun(size: Int, init: (Int) -> T): Array<T> {
     return result
 }
 
+@JsName("newBooleanArray")
+fun <T> newBooleanArray(size: Int): BooleanArray = withType(newArray(size, false), "BooleanArray")
+
+@JsName("newBooleanArrayOf")
+fun <T> newBooleanArrayOf(vararg bools: Boolean): BooleanArray = withType(bools, "BooleanArray")
+
 @JsName("newCharArray")
-fun <T> newCharArray(size: Int): CharArray = withCharType(fillArray(Array(size), 0))
+fun <T> newCharArray(size: Int): CharArray = withType(newArray(size, 0), "CharArray")
 
 @JsName("newCharArrayOf")
-fun <T> newCharArrayOf(vararg chars: Char): CharArray = withCharType(chars)
+fun <T> newCharArrayOf(vararg chars: Char): CharArray = withType(chars, "CharArray")
 
-private fun withCharType(charArray: dynamic): CharArray {
-    charArray.`$type$` = "CharArray"
-    return charArray
+@JsName("newLongArray")
+fun <T> newLongArray(size: Int): LongArray = withType(newArray(size, js("Kotlin.Long.ZERO")), "LongArray")
+
+@JsName("newLongArrayOf")
+fun <T> newLongArrayOf(vararg longs: Long): LongArray = withType(longs, "LongArray")
+
+private fun withType(array: dynamic, type: String): dynamic {
+    array.`$type$` = type
+    return array
 }

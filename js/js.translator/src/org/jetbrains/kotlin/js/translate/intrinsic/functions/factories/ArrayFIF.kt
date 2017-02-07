@@ -60,28 +60,32 @@ object ArrayFIF : CompositeFIF() {
         add(pattern(arrays, "<get-size>"), LENGTH_PROPERTY_INTRINSIC)
         add(pattern(arrays, "iterator"), KotlinFunctionIntrinsic("arrayIterator"))
 
-        add(BOOLEAN.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsLiteral.FALSE))
+        add(BOOLEAN.arrayPattern(), KotlinFunctionIntrinsic("newBooleanArray"))
         add(CHAR.arrayPattern(), KotlinFunctionIntrinsic("newCharArray"))
         add(BYTE.arrayPattern(), typedArrayIntrinsic("Int8"))
         add(SHORT.arrayPattern(), typedArrayIntrinsic("Int16"))
         add(INT.arrayPattern(), typedArrayIntrinsic("Int32"))
         add(FLOAT.arrayPattern(), typedArrayIntrinsic("Float32"))
-        add(LONG.arrayPattern(), KotlinFunctionIntrinsic("newArray", JsNameRef(Namer.LONG_ZERO, Namer.kotlinLong())))
+        add(LONG.arrayPattern(), KotlinFunctionIntrinsic("newLongArray"))
         add(DOUBLE.arrayPattern(), typedArrayIntrinsic("Float64"))
 
         add(pattern(arrays, "<init>(Int,Function1)"), KotlinFunctionIntrinsic("newArrayF"))
 
-        add(pattern("kotlin", "arrayOfNulls"), KotlinFunctionIntrinsic("newArray", JsLiteral.NULL))
-        add(pattern("kotlin", "charArrayOf"), KotlinFunctionIntrinsic("newCharArrayOf"))
+        add(pattern(Namer.KOTLIN_LOWER_NAME, "arrayOfNulls"), KotlinFunctionIntrinsic("newArray", JsLiteral.NULL))
 
-        val arrayFactoryMethodNames = arrayTypeNames.map { it.toArrayOf() }
+        add(BOOLEAN.arrayOfPattern(), KotlinFunctionIntrinsic("newBooleanArrayOf"))
+        add(CHAR.arrayOfPattern(), KotlinFunctionIntrinsic("newCharArrayOf"))
+        add(LONG.arrayOfPattern(), KotlinFunctionIntrinsic("newLongArrayOf"))
+
+        val arrayFactoryMethodNames = arrayTypeNames.map { Name.identifier(it.toArrayOf()) }
         val arrayFactoryMethods = pattern(Namer.KOTLIN_LOWER_NAME, NamePredicate(arrayFactoryMethodNames))
         add(arrayFactoryMethods, intrinsify { _, arguments, _ -> arguments[0] })
     }
 
     private fun PrimitiveType.arrayPattern() = pattern(NamePredicate(arrayTypeName), "<init>(Int)")
+    private fun PrimitiveType.arrayOfPattern() = pattern(Namer.KOTLIN_LOWER_NAME, arrayTypeName.toArrayOf())
 
-    private fun Name.toArrayOf() = Name.identifier(decapitalize(this.asString() + "Of"))
+    private fun Name.toArrayOf() = decapitalize(this.asString() + "Of")
 
     private fun typedArrayIntrinsic(typeName: String) = intrinsify { _, arguments, _ ->
         JsNew(JsNameRef(typeName + "Array"), arguments)
