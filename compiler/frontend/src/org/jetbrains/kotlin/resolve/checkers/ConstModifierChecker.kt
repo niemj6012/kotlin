@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ object ConstModifierChecker : SimpleDeclarationChecker {
 
         val constModifierPsiElement = declaration.modifierList!!.getModifier(KtTokens.CONST_KEYWORD)!!
 
-        val diagnostic = checkCanBeConst(declaration, constModifierPsiElement, descriptor)
+        val diagnostic = checkCanBeConst(declaration, constModifierPsiElement, descriptor).diagnostic
         if (diagnostic != null) {
             diagnosticHolder.report(diagnostic)
         }
@@ -45,38 +45,48 @@ object ConstModifierChecker : SimpleDeclarationChecker {
 
     fun checkCanBeConst(declaration: KtDeclaration,
                         constModifierPsiElement: PsiElement,
-                        descriptor: VariableDescriptor): Diagnostic? {
+                        descriptor: VariableDescriptor): ConstApplicability {
         if (descriptor.isVar) {
-            return Errors.WRONG_MODIFIER_TARGET.on(constModifierPsiElement, KtTokens.CONST_KEYWORD, "vars")
+            return Errors.WRONG_MODIFIER_TARGET.on(constModifierPsiElement, KtTokens.CONST_KEYWORD, "vars").toConstApplicability()
         }
 
         val containingDeclaration = descriptor.containingDeclaration
         if (containingDeclaration is ClassDescriptor && containingDeclaration.kind != ClassKind.OBJECT) {
-            return Errors.CONST_VAL_NOT_TOP_LEVEL_OR_OBJECT.on(constModifierPsiElement)
+            return Errors.CONST_VAL_NOT_TOP_LEVEL_OR_OBJECT.on(constModifierPsiElement).toConstApplicability()
         }
 
-        if (declaration !is KtProperty || descriptor !is PropertyDescriptor) return null
+        if (declaration !is KtProperty || descriptor !is PropertyDescriptor) return ConstApplicability.NonApplicable
 
         if (declaration.hasDelegate()) {
-            return Errors.CONST_VAL_WITH_DELEGATE.on(declaration.delegate!!)
+            return Errors.CONST_VAL_WITH_DELEGATE.on(declaration.delegate!!).toConstApplicability()
         }
 
         if (descriptor is PropertyDescriptor && !descriptor.getter!!.isDefault) {
-            return Errors.CONST_VAL_WITH_GETTER.on(declaration.getter!!)
+            return Errors.CONST_VAL_WITH_GETTER.on(declaration.getter!!).toConstApplicability()
         }
 
+        if (descriptor.type.isError) return ConstApplicability.NonApplicable
+
+        // Report errors about const initializer only on property of resolved types
         if (!descriptor.type.canBeUsedForConstVal()) {
-            return Errors.TYPE_CANT_BE_USED_FOR_CONST_VAL.on(constModifierPsiElement, descriptor.type)
+            return Errors.TYPE_CANT_BE_USED_FOR_CONST_VAL.on(constModifierPsiElement, descriptor.type).toConstApplicability()
         }
 
         if (declaration.initializer == null) {
-            return Errors.CONST_VAL_WITHOUT_INITIALIZER.on(constModifierPsiElement)
+            return Errors.CONST_VAL_WITHOUT_INITIALIZER.on(constModifierPsiElement).toConstApplicability()
         }
 
         if (descriptor.compileTimeInitializer == null) {
-            return Errors.CONST_VAL_WITH_NON_CONST_INITIALIZER.on(declaration.initializer!!)
+            return Errors.CONST_VAL_WITH_NON_CONST_INITIALIZER.on(declaration.initializer!!).toConstApplicability()
         }
 
-        return null
+        return ConstApplicability.Applicable
     }
 }
+
+open class ConstApplicability(val canBeConst: Boolean, val diagnostic: Diagnostic?) {
+    object Applicable : ConstApplicability(true, null)
+    object NonApplicable : ConstApplicability(false, null)
+}
+
+private fun Diagnostic.toConstApplicability() = ConstApplicability(false, this)
