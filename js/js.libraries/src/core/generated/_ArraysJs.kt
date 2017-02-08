@@ -12961,7 +12961,7 @@ public inline fun <T> Array<out T>.copyOf(): Array<T> {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline fun ByteArray.copyOf(): ByteArray {
-    return js("Int8Array.from")(this)
+    return byteArrayOf(*this)
 }
 
 /**
@@ -12969,7 +12969,7 @@ public inline fun ByteArray.copyOf(): ByteArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline fun ShortArray.copyOf(): ShortArray {
-    return js("Int16Array.from")(this)
+    return shortArrayOf(*this)
 }
 
 /**
@@ -12977,7 +12977,7 @@ public inline fun ShortArray.copyOf(): ShortArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline fun IntArray.copyOf(): IntArray {
-    return js("Int32Array.from")(this)
+    return intArrayOf(*this)
 }
 
 /**
@@ -12993,7 +12993,7 @@ public inline fun LongArray.copyOf(): LongArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline fun FloatArray.copyOf(): FloatArray {
-    return js("Float32Array.from")(this)
+    return floatArrayOf(*this)
 }
 
 /**
@@ -13001,7 +13001,7 @@ public inline fun FloatArray.copyOf(): FloatArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline fun DoubleArray.copyOf(): DoubleArray {
-    return js("Float64Array.from")(this)
+    return doubleArrayOf(*this)
 }
 
 /**
@@ -13024,21 +13024,21 @@ public inline fun CharArray.copyOf(): CharArray {
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun ByteArray.copyOf(newSize: Int): ByteArray {
-    return arrayCopy(this, ByteArray(newSize), 0)
+    return arrayCopy(this, ByteArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun ShortArray.copyOf(newSize: Int): ShortArray {
-    return arrayCopy(this, ShortArray(newSize), 0)
+    return arrayCopy(this, ShortArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun IntArray.copyOf(newSize: Int): IntArray {
-    return arrayCopy(this, IntArray(newSize), 0)
+    return arrayCopy(this, IntArray(newSize))
 }
 
 /**
@@ -13052,14 +13052,14 @@ public fun LongArray.copyOf(newSize: Int): LongArray {
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun FloatArray.copyOf(newSize: Int): FloatArray {
-    return arrayCopy(this, FloatArray(newSize), 0)
+    return arrayCopy(this, FloatArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun DoubleArray.copyOf(newSize: Int): DoubleArray {
-    return arrayCopy(this, DoubleArray(newSize), 0)
+    return arrayCopy(this, DoubleArray(newSize))
 }
 
 /**
@@ -13168,7 +13168,7 @@ public inline operator fun <T> Array<out T>.plus(element: T): Array<T> {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun ByteArray.plus(element: Byte): ByteArray {
-    return arrayCopy(this, ByteArray(size + 1), element)
+    return this.copyOf(size + 1).also { it[size] = element }
 }
 
 /**
@@ -13176,7 +13176,7 @@ public inline operator fun ByteArray.plus(element: Byte): ByteArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun ShortArray.plus(element: Short): ShortArray {
-    return arrayCopy(this, ShortArray(size + 1), element)
+    return this.copyOf(size + 1).also { it[size] = element }
 }
 
 /**
@@ -13184,7 +13184,7 @@ public inline operator fun ShortArray.plus(element: Short): ShortArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun IntArray.plus(element: Int): IntArray {
-    return arrayCopy(this, IntArray(size + 1), element)
+    return this.copyOf(size + 1).also { it[size] = element }
 }
 
 /**
@@ -13200,7 +13200,7 @@ public inline operator fun LongArray.plus(element: Long): LongArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun FloatArray.plus(element: Float): FloatArray {
-    return arrayCopy(this, FloatArray(size + 1), element)
+    return this.copyOf(size + 1).also { it[size] = element }
 }
 
 /**
@@ -13208,7 +13208,7 @@ public inline operator fun FloatArray.plus(element: Float): FloatArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun DoubleArray.plus(element: Double): DoubleArray {
-    return arrayCopy(this, DoubleArray(size + 1), element)
+    return this.copyOf(size + 1).also { it[size] = element }
 }
 
 /**
@@ -13238,21 +13238,21 @@ public operator fun <T> Array<out T>.plus(elements: Collection<T>): Array<T> {
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun ByteArray.plus(elements: Collection<Byte>): ByteArray {
-    return arrayPlusCollection(this, elements)
+    return typedArrayPlusCollection(this, this.copyOf(size + elements.size), elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun ShortArray.plus(elements: Collection<Short>): ShortArray {
-    return arrayPlusCollection(this, elements)
+    return typedArrayPlusCollection(this, this.copyOf(size + elements.size), elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun IntArray.plus(elements: Collection<Int>): IntArray {
-    return arrayPlusCollection(this, elements)
+    return typedArrayPlusCollection(this, this.copyOf(size + elements.size), elements)
 }
 
 /**
@@ -13266,14 +13266,14 @@ public operator fun LongArray.plus(elements: Collection<Long>): LongArray {
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun FloatArray.plus(elements: Collection<Float>): FloatArray {
-    return arrayPlusCollection(this, elements)
+    return typedArrayPlusCollection(this, this.copyOf(size + elements.size), elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun DoubleArray.plus(elements: Collection<Double>): DoubleArray {
-    return arrayPlusCollection(this, elements)
+    return typedArrayPlusCollection(this, this.copyOf(size + elements.size), elements)
 }
 
 /**
@@ -13303,7 +13303,11 @@ public inline operator fun <T> Array<out T>.plus(elements: Array<out T>): Array<
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun ByteArray.plus(elements: ByteArray): ByteArray {
-    return this.asDynamic().concat(elements)
+    return this.copyOf(size + elements.size).also {
+        for (i in 0..elements.size) {
+            it[size + i] = elements[i]
+        }
+    }
 }
 
 /**
@@ -13311,7 +13315,11 @@ public inline operator fun ByteArray.plus(elements: ByteArray): ByteArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun ShortArray.plus(elements: ShortArray): ShortArray {
-    return this.asDynamic().concat(elements)
+    return this.copyOf(size + elements.size).also {
+        for (i in 0..elements.size) {
+            it[size + i] = elements[i]
+        }
+    }
 }
 
 /**
@@ -13319,7 +13327,11 @@ public inline operator fun ShortArray.plus(elements: ShortArray): ShortArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun IntArray.plus(elements: IntArray): IntArray {
-    return this.asDynamic().concat(elements)
+    return this.copyOf(size + elements.size).also {
+        for (i in 0..elements.size) {
+            it[size + i] = elements[i]
+        }
+    }
 }
 
 /**
@@ -13335,7 +13347,11 @@ public inline operator fun LongArray.plus(elements: LongArray): LongArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun FloatArray.plus(elements: FloatArray): FloatArray {
-    return this.asDynamic().concat(elements)
+    return this.copyOf(size + elements.size).also {
+        for (i in 0..elements.size) {
+            it[size + i] = elements[i]
+        }
+    }
 }
 
 /**
@@ -13343,7 +13359,11 @@ public inline operator fun FloatArray.plus(elements: FloatArray): FloatArray {
  */
 @Suppress("NOTHING_TO_INLINE")
 public inline operator fun DoubleArray.plus(elements: DoubleArray): DoubleArray {
-    return this.asDynamic().concat(elements)
+    return this.copyOf(size + elements.size).also {
+        for (i in 0..elements.size) {
+            it[size + i] = elements[i]
+        }
+    }
 }
 
 /**
@@ -13446,21 +13466,21 @@ public fun <T> Array<out T>.sortWith(comparator: Comparator<in T>): Unit {
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun ByteArray.toTypedArray(): Array<Byte> {
-    return js("Array.from")(this)
+    return js("Array.prototype.slice.call")(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun ShortArray.toTypedArray(): Array<Short> {
-    return js("Array.from")(this)
+    return js("Array.prototype.slice.call")(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun IntArray.toTypedArray(): Array<Int> {
-    return js("Array.from")(this)
+    return js("Array.prototype.slice.call")(this)
 }
 
 /**
@@ -13474,14 +13494,14 @@ public fun LongArray.toTypedArray(): Array<Long> {
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun FloatArray.toTypedArray(): Array<Float> {
-    return js("Array.from")(this)
+    return js("Array.prototype.slice.call")(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun DoubleArray.toTypedArray(): Array<Double> {
-    return js("Array.from")(this)
+    return js("Array.prototype.slice.call")(this)
 }
 
 /**
