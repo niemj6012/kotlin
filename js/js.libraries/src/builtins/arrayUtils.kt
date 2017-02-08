@@ -61,3 +61,23 @@ private fun withType(array: dynamic, type: String): dynamic {
     array.`$type$` = type
     return array
 }
+
+@JsName("copyTypedArray")
+fun <T> copyTypedArray(arr: dynamic) = js("Array.isArray(arr) ? arr.slice() : new arr.constructor(arr)")
+
+@JsName("concatTypedArray")
+fun <T> concatTypedArray(arr: Array<T>, arr2: Array<T>): dynamic {
+    if (js("Array.isArray(arr)") as Boolean) {
+        return js("arr.concat(arr2)")
+    }
+    else {
+        val result: Array<T> = js("new arr.constructor(arr.length + arr2.length)")
+        for (i in 0..arr.size - 1) {
+            result[i] = arr[i]
+        }
+        for (i in 0..arr2.size - 1) {
+            result[arr.size + i] = arr2[i]
+        }
+        return result
+    }
+}

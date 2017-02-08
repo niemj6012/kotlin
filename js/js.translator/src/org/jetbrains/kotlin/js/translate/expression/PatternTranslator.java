@@ -35,8 +35,8 @@ import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.js.translate.general.Translation;
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.factories.TopLevelFIF;
-import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils;
 import org.jetbrains.kotlin.js.translate.reference.ReferenceTranslator;
+import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils;
 import org.jetbrains.kotlin.js.translate.utils.BindingUtils;
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils;
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
@@ -245,6 +245,22 @@ public final class PatternTranslator extends AbstractTranslator {
 
         if (NamePredicate.PRIMITIVE_NUMBERS_MAPPED_TO_PRIMITIVE_JS.apply(typeName)) {
             return namer().isTypeOf(program().getStringLiteral("number"));
+        }
+
+        if (KotlinBuiltIns.isPrimitiveArray(type)) {
+            PrimitiveType arrayType = KotlinBuiltIns.getPrimitiveArrayType(type);
+            switch (arrayType) {
+                case BYTE:
+                    return namer().isInstanceOf(program().getStringLiteral("Int8Array"));
+                case SHORT:
+                    return namer().isInstanceOf(program().getStringLiteral("Int16Array"));
+                case INT:
+                    return namer().isInstanceOf(program().getStringLiteral("Int32Array"));
+                case FLOAT:
+                    return namer().isInstanceOf(program().getStringLiteral("Float32Array"));
+                case DOUBLE:
+                    return namer().isInstanceOf(program().getStringLiteral("Float64Array"));
+            }
         }
 
         return null;
