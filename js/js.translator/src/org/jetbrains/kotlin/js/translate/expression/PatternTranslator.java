@@ -56,8 +56,7 @@ import static org.jetbrains.kotlin.builtins.FunctionTypesKt.isFunctionTypeOrSubt
 import static org.jetbrains.kotlin.builtins.KotlinBuiltIns.isArray;
 import static org.jetbrains.kotlin.js.descriptorUtils.DescriptorUtilsKt.getNameIfStandardType;
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getTypeByReference;
-import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.equality;
-import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.not;
+import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*;
 import static org.jetbrains.kotlin.psi.KtPsiUtil.findChildByType;
 import static org.jetbrains.kotlin.types.TypeUtils.*;
 
@@ -210,7 +209,7 @@ public final class PatternTranslator extends AbstractTranslator {
             return namer().isTypeOf(program().getStringLiteral("function"));
         }
 
-        if (isArray(type)) return Namer.IS_ARRAY_FUN_REF;
+        if (isArray(type)) return namer().isArray();
 
         if (TypePredicatesKt.getCHAR_SEQUENCE().apply(type)) return namer().isCharSequence();
 
@@ -250,16 +249,22 @@ public final class PatternTranslator extends AbstractTranslator {
         if (KotlinBuiltIns.isPrimitiveArray(type)) {
             PrimitiveType arrayType = KotlinBuiltIns.getPrimitiveArrayType(type);
             switch (arrayType) {
+                case BOOLEAN:
+                    return namer().isBooleanArray();
+                case CHAR:
+                    return namer().isCharArray();
                 case BYTE:
-                    return namer().isInstanceOf(program().getStringLiteral("Int8Array"));
+                    return namer().isInstanceOf(pureFqn("Int8Array", null));
                 case SHORT:
-                    return namer().isInstanceOf(program().getStringLiteral("Int16Array"));
+                    return namer().isInstanceOf(pureFqn("Int16Array", null));
                 case INT:
-                    return namer().isInstanceOf(program().getStringLiteral("Int32Array"));
+                    return namer().isInstanceOf(pureFqn("Int32Array", null));
                 case FLOAT:
-                    return namer().isInstanceOf(program().getStringLiteral("Float32Array"));
+                    return namer().isInstanceOf(pureFqn("Float32Array", null));
+                case LONG:
+                    return namer().isLongArray();
                 case DOUBLE:
-                    return namer().isInstanceOf(program().getStringLiteral("Float64Array"));
+                    return namer().isInstanceOf(pureFqn("Float64Array", null));
             }
         }
 

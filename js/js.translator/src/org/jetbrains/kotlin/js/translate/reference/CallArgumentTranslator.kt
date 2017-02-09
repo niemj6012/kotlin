@@ -126,7 +126,7 @@ class CallArgumentTranslator private constructor(
             assert(argsBeforeVararg != null) { "argsBeforeVararg should not be null" }
             assert(concatArguments != null) { "concatArguments should not be null" }
 
-            concatArguments!!.addAll(result)
+            concatArguments!!.add(JsArrayLiteral(result))
 
             if (!argsBeforeVararg!!.isEmpty()) {
                 concatArguments.add(0, JsArrayLiteral(argsBeforeVararg).apply { sideEffects = SideEffectKind.DEPENDS_ON_STATE })
@@ -290,12 +290,9 @@ class CallArgumentTranslator private constructor(
                 if (valueArgument.getSpreadElement() != null) {
                     if (lastArrayContent.size > 0) {
                         concatArguments.add(JsArrayLiteral(lastArrayContent).apply { sideEffects = SideEffectKind.DEPENDS_ON_STATE })
-                        concatArguments.add(expressionArgument)
                         lastArrayContent = mutableListOf<JsExpression>()
                     }
-                    else {
-                        concatArguments.add(expressionArgument)
-                    }
+                    concatArguments.add(expressionArgument)
                 }
                 else {
                     lastArrayContent.add(expressionArgument)
