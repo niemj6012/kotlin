@@ -107,6 +107,11 @@ private fun getExtraLanguageFeatures(
     }
 }
 
+fun KtElement.createCompilerConfiguration(): CompilerConfiguration = CompilerConfiguration().apply {
+    put(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS, languageVersionSettings)
+    isReadOnly = true
+}
+
 val KtElement.languageVersionSettings: LanguageVersionSettings
     get() {
         if (ServiceManager.getService(containingKtFile.project, ProjectFileIndex::class.java) == null) {
