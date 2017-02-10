@@ -41,7 +41,10 @@ Kotlin.arrayToString = function (a) {
 
 Kotlin.arrayDeepToString = function (a, visited) {
     visited = visited || [a];
-    var charArray = Kotlin.isCharArray(a);
+    var toString = Kotlin.toString;
+    if (Kotlin.isCharArray(a)) {
+        toString = String.fromCharCode;
+    }
     return "[" + a.map(function (e) {
             if (Kotlin.isArray(e) && visited.indexOf(e) < 0) {
                 visited.push(e);
@@ -50,12 +53,7 @@ Kotlin.arrayDeepToString = function (a, visited) {
                 return result;
             }
             else {
-                if (charArray) {
-                    return String.fromCharCode(e)
-                }
-                else {
-                    return Kotlin.toString(e);
-                }
+                return toString(e);
             }
         }).join(", ") + "]";
 };
