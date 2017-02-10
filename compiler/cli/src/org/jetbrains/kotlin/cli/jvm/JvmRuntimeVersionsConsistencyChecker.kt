@@ -47,7 +47,6 @@ object JvmRuntimeVersionsConsistencyChecker {
     private const val MANIFEST_MF = "$META_INF/MANIFEST.MF"
 
     private const val MANIFEST_KOTLIN_VERSION_ATTRIBUTE = "manifest.impl.attribute.kotlin.version"
-    private const val MANIFEST_KOTLIN_VERSION_VALUE = "manifest.impl.value.kotlin.version"
     private const val MANIFEST_KOTLIN_RUNTIME_COMPONENT = "manifest.impl.attribute.kotlin.runtime.component"
     private const val MANIFEST_KOTLIN_RUNTIME_COMPONENT_CORE = "manifest.impl.value.kotlin.runtime.component.core"
     private const val MANIFEST_KOTLIN_RUNTIME_COMPONENT_MAIN = "manifest.impl.value.kotlin.runtime.component.main"
@@ -60,7 +59,6 @@ object JvmRuntimeVersionsConsistencyChecker {
     )
 
     private val KOTLIN_VERSION_ATTRIBUTE: String
-    private val CURRENT_COMPILER_VERSION: MavenComparableVersion
 
     private val KOTLIN_RUNTIME_COMPONENT_ATTRIBUTE: String
     private val KOTLIN_RUNTIME_COMPONENT_CORE: String
@@ -79,18 +77,6 @@ object JvmRuntimeVersionsConsistencyChecker {
 
         KOTLIN_VERSION_ATTRIBUTE = manifestProperties.getProperty(MANIFEST_KOTLIN_VERSION_ATTRIBUTE)
                 .assertNotNull { "$MANIFEST_KOTLIN_VERSION_ATTRIBUTE not found in kotlinManifest.properties" }
-
-        CURRENT_COMPILER_VERSION = run {
-            val kotlinVersionString = manifestProperties.getProperty(MANIFEST_KOTLIN_VERSION_VALUE)
-                    .assertNotNull { "$MANIFEST_KOTLIN_VERSION_VALUE not found in kotlinManifest.properties" }
-
-            MavenComparableVersion(kotlinVersionString)
-        }
-
-        if (CURRENT_COMPILER_VERSION != ApiVersion.LATEST.version) {
-            fatal("Kotlin compiler version $CURRENT_COMPILER_VERSION in kotlinManifest.properties doesn't match ${ApiVersion.LATEST}")
-        }
-
         KOTLIN_RUNTIME_COMPONENT_ATTRIBUTE = manifestProperties.getProperty(MANIFEST_KOTLIN_RUNTIME_COMPONENT)
                 .assertNotNull { "$MANIFEST_KOTLIN_RUNTIME_COMPONENT not found in kotlinManifest.properties" }
         KOTLIN_RUNTIME_COMPONENT_CORE = manifestProperties.getProperty(MANIFEST_KOTLIN_RUNTIME_COMPONENT_CORE)
@@ -115,13 +101,13 @@ object JvmRuntimeVersionsConsistencyChecker {
 
     fun checkCompilerClasspathConsistency(
             messageCollector: MessageCollector,
-            languageVersionSettings: LanguageVersionSettings?,
+            languageVersionSettings: LanguageVersionSettings,
             classpathJarRoots: List<VirtualFile>
     ) {
         val runtimeJarsInfo = collectRuntimeJarsInfo(classpathJarRoots)
         if (runtimeJarsInfo.jars.isEmpty()) return
 
-        val apiVersion = languageVersionSettings?.apiVersion?.version ?: CURRENT_COMPILER_VERSION
+        val apiVersion = languageVersionSettings.apiVersion.version
 
         val consistency = checkCompilerClasspathConsistency(messageCollector, apiVersion, runtimeJarsInfo)
         if (consistency != ClasspathConsistency.Consistent) {
@@ -194,8 +180,8 @@ object JvmRuntimeVersionsConsistencyChecker {
     }
 
     private fun checkNotNewerThanCompiler(messageCollector: MessageCollector, jar: KotlinLibraryFile): Boolean {
-        if (jar.version > CURRENT_COMPILER_VERSION) {
-            messageCollector.issue(jar.file, "Runtime JAR file has version ${jar.version} which is newer than compiler version $CURRENT_COMPILER_VERSION")
+        if (jar.version > ApiVersion.LATEST.version) {
+            messageCollector.issue(jar.file, "Runtime JAR file has version ${jar.version} which is newer than compiler version ${ApiVersion.LATEST.version}")
             return true
         }
         return false
