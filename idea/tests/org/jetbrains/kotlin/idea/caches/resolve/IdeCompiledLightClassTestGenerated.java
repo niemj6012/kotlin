@@ -60,6 +60,12 @@ public class IdeCompiledLightClassTestGenerated extends AbstractIdeCompiledLight
         doTest(fileName);
     }
 
+    @TestMetadata("JvmNameOnMember.kt")
+    public void testJvmNameOnMember() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmNameOnMember.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("compiler/testData/asJava/lightClasses/delegation")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
