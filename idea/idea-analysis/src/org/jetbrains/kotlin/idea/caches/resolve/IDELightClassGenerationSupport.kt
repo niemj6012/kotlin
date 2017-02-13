@@ -66,6 +66,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getElementTextWithContext
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
 import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.resolve.lazy.declarations.FileBasedDeclarationProviderFactory
@@ -96,7 +97,17 @@ class IDELightClassGenerationSupport(private val project: Project) : LightClassG
         val trace = BindingTraceContext()
         val sm = LockBasedStorageManager.NO_LOCKS
         val moduleDescriptor = ModuleDescriptorImpl(Name.special("<dummy>"), sm, classOrObject.getResolutionFacade().moduleDescriptor.builtIns)
-        moduleDescriptor.setDependencies(moduleDescriptor, moduleDescriptor.builtIns.builtInsModule)
+        val jvmFieldClass = classOrObject.getResolutionFacade()
+                .moduleDescriptor.getPackage(FqName("kotlin.jvm")).memberScope
+                .getContributedClassifier(Name.identifier("JvmField"), NoLookupLocation.FROM_IDE)
+
+        if (jvmFieldClass != null) {
+            moduleDescriptor.setDependencies(moduleDescriptor, jvmFieldClass.module as ModuleDescriptorImpl, moduleDescriptor.builtIns.builtInsModule)
+        }
+        else {
+            moduleDescriptor.setDependencies(moduleDescriptor, moduleDescriptor.builtIns.builtInsModule)
+        }
+
         val container = createContainer("LightClassStub", DefaultAnalyzerFacade.targetPlatform) {
             configureModule(ModuleContext(moduleDescriptor, project), JvmPlatform, trace)
 
@@ -129,10 +140,10 @@ class IDELightClassGenerationSupport(private val project: Project) : LightClassG
 
 
         val resolveSession = container.get<ResolveSession>()
-
         moduleDescriptor.initialize(CompositePackageFragmentProvider(listOf(resolveSession.packageFragmentProvider)))
 
-        container.get<LazyTopDownAnalyzer>().analyzeDeclarations(TopDownAnalysisMode.TopLevelDeclarations, listOf(classOrObject))
+        val descriptor = resolveSession.resolveToDescriptor(classOrObject)
+        ForceResolveUtil.forceResolveAllContents(descriptor)
 
         return LightClassConstructionContext(trace.bindingContext, moduleDescriptor)
     }
