@@ -41,7 +41,7 @@ private class WeakClassLoaderBox(classLoader: ClassLoader) {
             identityHashCode
 
     override fun toString() =
-            ref.get()?.let { it.toString() } ?: "<null>"
+            ref.get()?.toString() ?: "<null>"
 }
 
 internal fun Class<*>.getOrCreateModule(): RuntimeModuleData {
@@ -69,4 +69,9 @@ internal fun Class<*>.getOrCreateModule(): RuntimeModuleData {
     finally {
         key.temporaryStrongRef = null
     }
+}
+
+@Suppress("unused") // Used in tests
+fun clearReflectionCache() {
+    moduleByClassLoader.clear()
 }

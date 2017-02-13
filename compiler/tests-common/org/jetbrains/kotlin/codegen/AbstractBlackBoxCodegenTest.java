@@ -159,6 +159,23 @@ public abstract class AbstractBlackBoxCodegenTest extends CodegenTestCase {
                 System.out.println(generateToText());
                 throw ExceptionUtilsKt.rethrow(e);
             }
+            finally {
+                clearReflectionCache(generatedClassLoader);
+            }
+        }
+    }
+
+    private static void clearReflectionCache(@NotNull ClassLoader classLoader) {
+        try {
+            Class<?> klass = classLoader.loadClass("kotlin.reflect.jvm.internal.ModuleByClassLoaderKt");
+            Method method = klass.getDeclaredMethod("clearReflectionCache");
+            method.invoke(null);
+        }
+        catch (ClassNotFoundException e) {
+            // This is OK for a test without kotlin-reflect in the dependencies
+        }
+        catch (Exception e) {
+            throw ExceptionUtilsKt.rethrow(e);
         }
     }
 
