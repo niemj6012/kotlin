@@ -77,6 +77,7 @@ fun createContainerForBodyResolve(
 
     useInstance(LookupTracker.DO_NOTHING)
     useInstance(BodyResolveCache.ThrowException)
+    useImpl<AnnotationResolverImpl>()
     useInstance(languageVersionSettings)
 
     useImpl<BodyResolver>()
@@ -96,6 +97,7 @@ fun createContainerForLazyBodyResolve(
     useInstance(kotlinCodeAnalyzer)
     useInstance(kotlinCodeAnalyzer.fileScopeProvider)
     useInstance(bodyResolveCache)
+    useImpl<AnnotationResolverImpl>()
     useInstance(languageVersionSettings)
     useImpl<LazyTopDownAnalyzer>()
     useImpl<BasicAbsentDescriptorHandler>()
