@@ -44,9 +44,8 @@ import org.jetbrains.kotlin.container.useImpl
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.context.LazyResolveToken
 import org.jetbrains.kotlin.context.ModuleContext
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.PackagePartProvider
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.fileClasses.JvmFileClassUtil
@@ -55,6 +54,7 @@ import org.jetbrains.kotlin.frontend.di.configureModule
 import org.jetbrains.kotlin.idea.decompiler.classFile.KtClsFile
 import org.jetbrains.kotlin.idea.decompiler.navigation.SourceNavigationHelper
 import org.jetbrains.kotlin.idea.project.IdeaEnvironment
+import org.jetbrains.kotlin.idea.search.PsiBasedClassResolver
 import org.jetbrains.kotlin.idea.stubindex.*
 import org.jetbrains.kotlin.idea.stubindex.KotlinSourceFilterScope.Companion.sourceAndClassFiles
 import org.jetbrains.kotlin.idea.util.ProjectRootsUtil
@@ -66,17 +66,25 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getElementTextWithContext
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.CallResolver
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedValueArgument
+import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResults
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
 import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.resolve.lazy.declarations.FileBasedDeclarationProviderFactory
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.KotlinMetadataFinder
 import org.jetbrains.kotlin.serialization.deserialization.MetadataPackageFragmentProvider
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
+import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.types.ErrorUtils
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.WrappedTypeFactory
+import org.jetbrains.kotlin.utils.keysToMap
 import org.jetbrains.kotlin.utils.sure
 import java.util.*
 
@@ -116,13 +124,15 @@ class IDELightClassGenerationSupport(private val project: Project) : LightClassG
             useImpl<ResolveSession>()
             useImpl<LazyTopDownAnalyzer>()
             useImpl<FileScopeProviderImpl>()
+            useImpl<AdHocAnnotationResolver>()
+
             useInstance(LanguageVersion.LATEST)
             useImpl<CompilerDeserializationConfiguration>()
             useImpl<MetadataPackageFragmentProvider>()
             val languageVersionSettings = LanguageVersionSettingsImpl(
                     LanguageVersion.LATEST, ApiVersion.LATEST
             )
-            useInstance(object: WrappedTypeFactory(sm) {
+            useInstance(object : WrappedTypeFactory(sm) {
                 override fun createLazyWrappedType(computation: () -> KotlinType): KotlinType = ErrorUtils.createErrorType("^_^")
 
                 override fun createDeferredType(trace: BindingTrace, computation: () -> KotlinType) = ErrorUtils.createErrorType("^_^")
@@ -468,5 +478,49 @@ class KtFileClassProviderImpl(val lightClassGenerationSupport: LightClassGenerat
         }
 
         return result.toTypedArray()
+    }
+}
+
+private val annotationsThatAffectCodegen = listOf("JvmField", "JvmOverloads", "JvmName").map { FqName("kotlin.jvm").child(Name.identifier(it)) }
+//private val annotationsToResolver = annotationsThatAffectCodegen.keysToMap { PsiBasedClassResolver(it.asString()) }
+
+
+class AdHocAnnotationResolver(
+        private val moduleDescriptor: ModuleDescriptor,
+        callResolver: CallResolver,
+        constantExpressionEvaluator: ConstantExpressionEvaluator,
+        storageManager: StorageManager
+) : AnnotationResolverImpl(callResolver, constantExpressionEvaluator, storageManager) {
+
+    override fun resolveAnnotationEntries(scope: LexicalScope, annotationEntries: List<KtAnnotationEntry>, trace: BindingTrace, shouldResolveArguments: Boolean): Annotations {
+        return super.resolveAnnotationEntries(scope, annotationEntries, trace, shouldResolveArguments)
+    }
+
+    override fun resolveAnnotationType(scope: LexicalScope, entryElement: KtAnnotationEntry, trace: BindingTrace): KotlinType {
+        return annotationClassByEntry(entryElement)?.defaultType ?: super.resolveAnnotationType(scope, entryElement, trace)
+    }
+
+    private fun annotationClassByEntry(entryElement: KtAnnotationEntry): ClassDescriptor? {
+        val annotationTypeReferencePsi = (entryElement.typeReference?.typeElement as? KtUserType)?.referenceExpression ?: return null
+        val referencedName = annotationTypeReferencePsi.getReferencedName()
+        for (annotationFqName in annotationsThatAffectCodegen) {
+            if (referencedName == annotationFqName.shortName().asString()) {
+                moduleDescriptor.getPackage(annotationFqName.parent()).memberScope
+                        .getContributedClassifier(annotationFqName.shortName(), NoLookupLocation.FROM_IDE)?.let { return it as? ClassDescriptor }
+
+            }
+        }
+        return null
+    }
+
+    override fun resolveAnnotationCall(annotationEntry: KtAnnotationEntry, scope: LexicalScope, trace: BindingTrace): OverloadResolutionResults<FunctionDescriptor> {
+        val annotationClass = annotationClassByEntry(annotationEntry) ?: return super.resolveAnnotationCall(annotationEntry, scope, trace)
+//        return  object:  OverloadResolutionResults<FunctionDescriptor> {
+//
+//        }
+    }
+
+    override fun getAnnotationArgumentValue(trace: BindingTrace, valueParameter: ValueParameterDescriptor, resolvedArgument: ResolvedValueArgument): ConstantValue<*>? {
+        return super.getAnnotationArgumentValue(trace, valueParameter, resolvedArgument)
     }
 }
